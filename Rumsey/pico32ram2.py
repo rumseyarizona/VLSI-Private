@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 
+import platform
+import sys
+import traceback
+from pathlib import Path
+
+import siliconcompiler
 from siliconcompiler import ASIC, Design
 from siliconcompiler.targets import skywater130_demo
 
@@ -32,18 +38,40 @@ class PicoRV32RamDesign(Design):
 
 
 def main():
+    rootdir = Path(__file__).resolve().parent
+    print(f"Python: {sys.version}")
+    print(f"Platform: {platform.platform()}")
+    print(f"SiliconCompiler: {siliconcompiler.__version__}")
+    print(f"Script directory: {rootdir}")
+
+    required_files = [
+        "picorv32.v",
+        "picorv32_top2.v",
+        "picorv32.sdc",
+        "sky130_sram_2k.bb.v",
+        "sky130_sram_2kbyte_1rw1r_32x512_8.gds",
+        "sky130_sram_2kbyte_1rw1r_32x512_8.lef",
+    ]
+    missing_files = [name for name in required_files if not (rootdir / name).is_file()]
+    if missing_files:
+        raise FileNotFoundError(f"Missing required input files: {', '.join(missing_files)}")
+    print("Required file preflight passed")
+
+    design = PicoRV32RamDesign()
+    if not design.check_filepaths():
+        raise RuntimeError("SiliconCompiler design file path check failed")
+    print("Design file path check passed")
+
     project = ASIC()
 
-    project.set_design(PicoRV32RamDesign())
-    project.add_fileset("rtl")
+    project.set_design(design)
+    project.add_fileset(["rtl", "sdc"])
 
     skywater130_demo(project)
 
     sram_lib = sky130_sram_2k.setup(stackup="5M1MIC")
     project.add_dep(sram_lib)
     project.add_asiclib(sram_lib)
-
-    project.add_fileset("sdc")
 
     area = project.constraint.area
     area.set_diearea([(0, 0), (1000, 1000)])
@@ -68,6 +96,7 @@ def main():
     project.set("constraint", "component", "sram", "rotation", "R180")
 
     project.option.set_remote(True)
+    print("Starting SiliconCompiler remote run")
 
     project.run()
     project.summary()
@@ -75,4 +104,12 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception:
+        error_path = Path(__file__).resolve().parent / "preflight_error.txt"
+        error_text = traceback.format_exc()
+        error_path.write_text(error_text)
+        print(error_text, file=sys.stderr)
+        print(f"Wrote exception details to {error_path}", file=sys.stderr)
+        raise
