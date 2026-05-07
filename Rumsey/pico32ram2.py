@@ -5,11 +5,23 @@ import sys
 import traceback
 from pathlib import Path
 
+BOOT_LOG = Path(__file__).resolve().parent / "script_debug.log"
+BOOT_LOG.write_text("entered pico32ram2.py before siliconcompiler import\n")
+print("entered pico32ram2.py before siliconcompiler import", flush=True)
+
 import siliconcompiler
 from siliconcompiler import ASIC, Design
 from siliconcompiler.targets import skywater130_demo
 
+with BOOT_LOG.open("a") as debug_log:
+    debug_log.write(f"imported siliconcompiler {siliconcompiler.__version__}\n")
+print(f"imported siliconcompiler {siliconcompiler.__version__}", flush=True)
+
 import sky130_sram_2k
+
+with BOOT_LOG.open("a") as debug_log:
+    debug_log.write("imported sky130_sram_2k\n")
+print("imported sky130_sram_2k", flush=True)
 
 
 class PicoRV32RamDesign(Design):
