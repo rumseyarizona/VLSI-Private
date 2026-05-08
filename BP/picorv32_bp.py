@@ -66,8 +66,7 @@ def build_top():
     # 6. Execute Build
     # Default to a remote SiliconCompiler run because this project is intended
     # for setups without a local OpenROAD installation.
-    run_remote = os.getenv("SC_REMOTE", "true").lower() not in ("0", "false", "no")
-    project.option.set_remote(run_remote)
+    project.option.set_remote(True)
     project.run()
     project.summary()
 
