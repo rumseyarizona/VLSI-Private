@@ -66,6 +66,7 @@ def build_top():
     project.option.set_remote(True)
     project.run()
     project.summary()
+    project.show()
 
 if __name__ == "__main__":
     build_top()
