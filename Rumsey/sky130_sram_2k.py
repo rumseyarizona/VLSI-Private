@@ -1,24 +1,26 @@
-import os
-
-from siliconcompiler import StdCellLibrary
+from siliconcompiler import Design
 
 
-def setup(stackup=None):
-    if stackup is None:
-        raise RuntimeError("Stackup cannot be None")
+class Sky130Sram2k(Design):
+    def __init__(self):
+        super().__init__()
 
-    rootdir = os.path.dirname(__file__)
-    lib = StdCellLibrary("sky130_sram_2k")
+        self.set_name("sky130_sram_2k")
+        self.set_dataroot("local", __file__)
 
-    lib.add_asic_pdk("skywater130")
-    lib.add_asic_stackup(stackup)
+        with self.active_fileset("rtl"):
+            with self.active_dataroot("local"):
+                self.set_topmodule("sky130_sram_2kbyte_1rw1r_32x512_8")
+                self.add_file("sky130_sram_2k.bb.v")
 
-    with lib.active_fileset("models.physical"):
-        lib.add_file(os.path.join(rootdir, "sky130_sram_2kbyte_1rw1r_32x512_8.gds"))
-        lib.add_file(os.path.join(rootdir, "sky130_sram_2kbyte_1rw1r_32x512_8.lef"))
-        lib.add_asic_aprfileset()
+       # with self.active_fileset("lef"):
+           # with self.active_dataroot("local"):
+                #self.add_file("sky130_sram_2kbyte_1rw1r_32x512_8.lef")
 
-    with lib.active_fileset("rtl"):
-        lib.add_file(os.path.join(rootdir, "sky130_sram_2k.bb.v"))
+       # with self.active_fileset("gds"):
+        #    with self.active_dataroot("local"):
+                #self.add_file("sky130_sram_2kbyte_1rw1r_32x512_8.gds")
 
-    return lib
+       # with self.active_fileset("lib"):
+        #    with self.active_dataroot("local"):
+                #self.add_file("sky130_sram_2kbyte_1rw1r_32x512_8_TT_1p8V_25C.lib")
