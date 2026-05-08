@@ -31,15 +31,16 @@ module neural_bht (
     // Global History Register
     reg [HIST_LEN-1:0] history;
     
-    // Wires for SRAM wrapper
+    // Wires for predictor table storage
     wire [8:0] read_addr = hashAddr(req_pc);
     wire [31:0] read_weights;
     
     wire [8:0] update_addr = hashAddr(update_pc);
     reg [31:0] write_weights;
     reg write_en;
-    
-    // Instantiate 2kbyte SRAM macro as the Perceptron table
+
+`ifdef USE_SRAM_MACRO
+    // Optional physical SRAM macro implementation.
     sky130_sram_2kbyte_1rw1r_32x512_8 table_sram (
         // Port 0: RW (used for updates)
         .clk0(clk),
@@ -56,6 +57,22 @@ module neural_bht (
         .addr1(read_addr),
         .dout1(read_weights)
     );
+`else
+    // Default synthesizable implementation for portable remote builds.
+    // This avoids requiring remote support for a user-provided SRAM GDS/LEF.
+    reg [31:0] table_mem [0:NUM_ENTRIES-1];
+    reg [31:0] read_weights_reg;
+
+    assign read_weights = read_weights_reg;
+
+    always @(posedge clk) begin
+        read_weights_reg <= table_mem[read_addr];
+
+        if (write_en) begin
+            table_mem[update_addr] <= write_weights;
+        end
+    end
+`endif
 
     // Prediction Logic (combinational based on SRAM dout)
     wire signed [7:0] w_bias = read_weights[7:0];

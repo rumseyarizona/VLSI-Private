@@ -1,18 +1,14 @@
 # picorv32_bp.py
 import os
 os.environ["QT_QPA_PLATFORM"] = "offscreen"
-from siliconcompiler import ASIC, Design, StdCellLibrary
+from siliconcompiler import ASIC, Design
 from siliconcompiler.targets import skywater130_demo
-
-try:
-    import sky130_sram_2k
-except ImportError:
-    from . import sky130_sram_2k
 
 def build_top():
     design_name = 'picorv32_bp_top'
     die_w = 1200
     die_h = 1200
+    use_sram_macro = os.getenv("USE_SRAM_MACRO", "false").lower() in ("1", "true", "yes")
 
     # 1. Setup the Design Object
     design = Design(design_name)
@@ -30,8 +26,10 @@ def build_top():
         # We inject our Verilog translation of the Scala NeuralBHT branch predictor
         design.add_file('neural_bht.v')
         
-        # Add the SRAM blackbox Wrapper
-        design.add_file('sky130_sram_2k.bb.v')
+        if use_sram_macro:
+            # Add the SRAM blackbox wrapper when using the physical macro path.
+            design.add_define('USE_SRAM_MACRO')
+            design.add_file('sky130_sram_2k.bb.v')
 
     with design.active_dataroot('local'), design.active_fileset('sdc'):
         design.add_file('picorv32.sdc')
@@ -41,11 +39,18 @@ def build_top():
     project.add_fileset(['rtl', 'sdc'])
     skywater130_demo(project)
 
-    # 3. Setup SRAM Macro Library
-    sram_lib = sky130_sram_2k.setup(stackup='5M1MIC')
-    
-    project.add_dep(sram_lib)
-    project.add_asiclib(sram_lib)
+    # 3. Optional SRAM Macro Library
+    # The default remote path uses synthesizable predictor storage. Enable this
+    # only in an environment known to support user-provided SRAM LEF/GDS macros.
+    if use_sram_macro:
+        try:
+            import sky130_sram_2k
+        except ImportError:
+            from . import sky130_sram_2k
+
+        sram_lib = sky130_sram_2k.setup(stackup='5M1MIC')
+        project.add_dep(sram_lib)
+        project.add_asiclib(sram_lib)
 
     # 4. Floorplanning & Constraints
     area = project.constraint.area

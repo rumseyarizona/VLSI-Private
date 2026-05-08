@@ -1,6 +1,6 @@
 # PicoRV32 Branch Predictor Flow
 
-This project demonstrates an automated ASIC build flow using [SiliconCompiler](https://docs.siliconcompiler.com/) to integrate and implement a Perceptron Branch Predictor (Neural Branch History Table) inside the PicoRV32 RISC-V processor, utilizing a physical SRAM macro.
+This project demonstrates an automated ASIC build flow using [SiliconCompiler](https://docs.siliconcompiler.com/) to integrate and implement a Perceptron Branch Predictor (Neural Branch History Table) inside the PicoRV32 RISC-V processor. The default remote build uses synthesizable predictor storage; a physical SRAM macro path is available as an opt-in mode.
 
 ## Processor Integration Details
 
@@ -22,10 +22,11 @@ To execute the SiliconCompiler ASIC build successfully, you need the following f
 * `neural_bht.v`: Synthesizable definition of the Branch History Table perceptron logic.
 * `sky130_sram_2k.bb.v`: The Verilog blackbox definition for the SRAM macro so the synthesis tool (Yosys) knows its port interfaces.
 
-### 3. Physical Macro Files (SRAM Library)
+### 3. Optional Physical Macro Files (SRAM Library)
 * `sky130_sram_2k.py`: A Python setup script that registers the physical layouts/macros dynamically with SiliconCompiler.
 * `sky130_sram_2kbyte_1rw1r_32x512_8.lef`: The physical footprint and boundaries for OpenROAD.
 * `sky130_sram_2kbyte_1rw1r_32x512_8.gds`: The layout geometry metadata of the SRAM.
+  These files are only used when `USE_SRAM_MACRO=true` is set.
 
 ## How to Run
 
@@ -45,9 +46,14 @@ To execute the SiliconCompiler ASIC build successfully, you need the following f
    ```
    The script uses a remote SiliconCompiler build, so a local OpenROAD install
    is not required.
+   To opt into the physical SRAM macro path, run:
+   ```bash
+   USE_SRAM_MACRO=true python3 picorv32_bp.py
+   ```
 
 2. **What happens during the build**:
-   * It configures a $1200 \times 1200 \mu m$ die core area to accommodate both the CPU standard cells and the Large SRAM macro.
+   * It configures a $1200 \times 1200 \mu m$ die core area to accommodate the CPU standard cells and predictor table.
+   * By default, the predictor table is implemented as synthesizable memory instead of a physical SRAM macro.
    * It relies on the selected SiliconCompiler target to configure tool-specific implementation steps.
    * Runs Yosys synthesis mapping the processor wrapper down to gates.
    * Runs remote physical implementation without requiring OpenROAD to be installed locally.
