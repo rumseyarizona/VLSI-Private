@@ -29,21 +29,28 @@ To execute the SiliconCompiler ASIC build successfully, you need the following f
 
 ## How to Run
 
+0. **Configure Remote Execution**: The build script is configured for remote
+   SiliconCompiler execution. Before running this project, configure and test
+   your remote endpoint inside the same environment/container:
+   ```bash
+   sc-remote -configure
+   sc-remote
+   ```
+   For the public server, use `https://server.siliconcompiler.com` and leave
+   username/password blank.
+
 1. **Execute the Build**: Run the python build script directly.
    ```bash
    python3 picorv32_bp.py
    ```
-   The script defaults to a remote SiliconCompiler build, so a local OpenROAD
-   install is not required. To force a local run in an environment that already
-   has the full toolchain installed, run:
-   ```bash
-   SC_REMOTE=false python3 picorv32_bp.py
-   ```
+   The script uses a remote SiliconCompiler build, so a local OpenROAD install
+   is not required.
 
 2. **What happens during the build**:
    * It configures a $1200 \times 1200 \mu m$ die core area to accommodate both the CPU standard cells and the Large SRAM macro.
+   * It relies on the selected SiliconCompiler target to configure tool-specific implementation steps.
    * Runs Yosys synthesis mapping the processor wrapper down to gates.
-   * Runs OpenROAD floorplanning, placement, clock-tree synthesis, and routing.
+   * Runs remote physical implementation without requiring OpenROAD to be installed locally.
    * Dumps the results to `/build/picorv32_bp_top/job0/`.
 
 3. **Viewing the Layout**:
